@@ -22,7 +22,9 @@
 #include "common.h"
 
 // kwineffects
-#include <kwinoffscreeneffect.h>
+#include <core/region.h>
+#include <effect/effectwindow.h>
+#include <effect/offscreeneffect.h>
 
 struct AnimationData {
     Model model;
@@ -39,9 +41,10 @@ public:
     void reconfigure(ReconfigureFlags flags) override;
 
     void prePaintScreen(KWin::ScreenPrePaintData& data, std::chrono::milliseconds presentTime) override;
+    void prePaintWindow(KWin::RenderView* view, KWin::EffectWindow* w, KWin::WindowPrePaintData& data, std::chrono::milliseconds presentTime) override;
     void postPaintScreen() override;
 
-    void paintWindow(KWin::EffectWindow* w, int mask, QRegion region, KWin::WindowPaintData& data) override;
+		void paintWindow(const KWin::RenderTarget &renderTarget, const KWin::RenderViewport &viewport, KWin::EffectWindow *w, int mask, const KWin::Region &deviceRegion, KWin::WindowPaintData &data) override;
 
     bool isActive() const override;
     int requestedEffectChainPosition() const override;
@@ -54,6 +57,7 @@ protected:
 private Q_SLOTS:
     void slotWindowMinimized(KWin::EffectWindow* w);
     void slotWindowUnminimized(KWin::EffectWindow* w);
+    void slotWindowAdded(KWin::EffectWindow* w);
     void slotWindowDeleted(KWin::EffectWindow* w);
     void slotActiveFullScreenEffectChanged();
 

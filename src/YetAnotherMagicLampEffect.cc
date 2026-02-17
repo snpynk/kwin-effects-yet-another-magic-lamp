@@ -15,9 +15,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Own
 #include "YetAnotherMagicLampEffect.h"
+using namespace std::chrono_literals;
+// Own
 #include "Model.h"
+#include "effect/effecthandler.h"
+#include "scene/windowitem.h"
 
 // Auto-generated
 #include "YetAnotherMagicLampConfig.h"
@@ -41,14 +44,19 @@ YetAnotherMagicLampEffect::YetAnotherMagicLampEffect()
 {
     reconfigure(ReconfigureAll);
 
-    connect(KWin::effects, &KWin::EffectsHandler::windowMinimized,
-        this, &YetAnotherMagicLampEffect::slotWindowMinimized);
-    connect(KWin::effects, &KWin::EffectsHandler::windowUnminimized,
-        this, &YetAnotherMagicLampEffect::slotWindowUnminimized);
+    connect(KWin::effects, &KWin::EffectsHandler::windowAdded,
+        this, &YetAnotherMagicLampEffect::slotWindowAdded);
     connect(KWin::effects, &KWin::EffectsHandler::windowDeleted,
         this, &YetAnotherMagicLampEffect::slotWindowDeleted);
     connect(KWin::effects, &KWin::EffectsHandler::activeFullScreenEffectChanged,
         this, &YetAnotherMagicLampEffect::slotActiveFullScreenEffectChanged);
+
+    const auto windows = KWin::effects->stackingOrder();
+    for (KWin::EffectWindow* window : windows) {
+        YetAnotherMagicLampEffect::slotWindowAdded(window);
+    }
+
+    setVertexSnappingMode(KWin::RenderGeometry::VertexSnappingMode::None);
 }
 
 YetAnotherMagicLampEffect::~YetAnotherMagicLampEffect()
@@ -112,9 +120,9 @@ void YetAnotherMagicLampEffect::reconfigure(ReconfigureFlags flags)
     }
     m_modelParameters.shapeCurve = curve;
 
-    const int baseDuration = animationTime<YetAnotherMagicLampConfig>(300);
+    const std::chrono::milliseconds baseDuration = std::chrono::milliseconds(animationTime<YetAnotherMagicLampConfig>(250ms));
     m_modelParameters.squashDuration = std::chrono::milliseconds(baseDuration);
-    m_modelParameters.stretchDuration = std::chrono::milliseconds(qMax(qRound(baseDuration * 0.7), 1));
+    m_modelParameters.stretchDuration = std::chrono::milliseconds(qMax(qRound(baseDuration.count() * 0.7), 1));
     m_modelParameters.bumpDuration = std::chrono::milliseconds(baseDuration);
     m_modelParameters.shapeFactor = YetAnotherMagicLampConfig::initialShapeFactor();
     m_modelParameters.bumpDistance = YetAnotherMagicLampConfig::maxBumpDistance();
@@ -124,13 +132,20 @@ void YetAnotherMagicLampEffect::reconfigure(ReconfigureFlags flags)
 
 void YetAnotherMagicLampEffect::prePaintScreen(KWin::ScreenPrePaintData& data, std::chrono::milliseconds presentTime)
 {
-    for (AnimationData& data : m_animations) {
-        data.model.advance(presentTime);
-    }
-
     data.mask |= PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS;
 
     KWin::effects->prePaintScreen(data, presentTime);
+}
+
+void YetAnotherMagicLampEffect::prePaintWindow(KWin::RenderView* view, KWin::EffectWindow* w, KWin::WindowPrePaintData& data, std::chrono::milliseconds presentTime)
+{
+    auto animationIt = m_animations.find(w);
+    if (animationIt != m_animations.end()) {
+        (animationIt)->model.advance(presentTime);
+        data.setTransformed();
+    }
+
+    KWin::effects->prePaintWindow(view, w, data, presentTime);
 }
 
 void YetAnotherMagicLampEffect::postPaintScreen()
@@ -148,9 +163,9 @@ void YetAnotherMagicLampEffect::postPaintScreen()
     KWin::effects->postPaintScreen();
 }
 
-void YetAnotherMagicLampEffect::paintWindow(KWin::EffectWindow* w, int mask, QRegion region, KWin::WindowPaintData& data)
+void YetAnotherMagicLampEffect::paintWindow(const KWin::RenderTarget& renderTarget, const KWin::RenderViewport& viewport, KWin::EffectWindow* w, int mask, const KWin::Region& deviceRegion, KWin::WindowPaintData& data)
 {
-    QRegion clip = region;
+    KWin::Region clip = deviceRegion;
 
     auto it = m_animations.constFind(w);
     if (it != m_animations.constEnd()) {
@@ -159,7 +174,7 @@ void YetAnotherMagicLampEffect::paintWindow(KWin::EffectWindow* w, int mask, QRe
         }
     }
 
-    KWin::effects->paintWindow(w, mask, clip, data);
+    KWin::effects->paintWindow(renderTarget, viewport, w, mask, deviceRegion, data);
 }
 
 void YetAnotherMagicLampEffect::apply(KWin::EffectWindow* window, int mask, KWin::WindowPaintData& data, KWin::WindowQuadList& quads)
@@ -173,7 +188,7 @@ void YetAnotherMagicLampEffect::apply(KWin::EffectWindow* window, int mask, KWin
     }
 
     quads = quads.makeGrid(m_gridResolution);
-    (*it).model.apply(quads);
+    (*it).model.apply(quads, data);
 }
 
 bool YetAnotherMagicLampEffect::isActive() const
@@ -183,13 +198,7 @@ bool YetAnotherMagicLampEffect::isActive() const
 
 bool YetAnotherMagicLampEffect::supported()
 {
-    if (!KWin::effects->animationsSupported()) {
-        return false;
-    }
-    if (KWin::effects->isOpenGLCompositing()) {
-        return true;
-    }
-    return false;
+    return OffscreenEffect::supported() && KWin::effects->animationsSupported();
 }
 
 void YetAnotherMagicLampEffect::slotWindowMinimized(KWin::EffectWindow* w)
@@ -210,7 +219,6 @@ void YetAnotherMagicLampEffect::slotWindowMinimized(KWin::EffectWindow* w)
     data.visibleRef = KWin::EffectWindowVisibleRef(w, KWin::EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
 
     redirect(w);
-
     KWin::effects->addRepaintFull();
 }
 
@@ -238,6 +246,17 @@ void YetAnotherMagicLampEffect::slotWindowUnminimized(KWin::EffectWindow* w)
 void YetAnotherMagicLampEffect::slotWindowDeleted(KWin::EffectWindow* w)
 {
     m_animations.remove(w);
+}
+
+void YetAnotherMagicLampEffect::slotWindowAdded(KWin::EffectWindow* w)
+{
+    connect(w, &KWin::EffectWindow::minimizedChanged, this, [this, w]() {
+        if (w->isMinimized()) {
+            slotWindowMinimized(w);
+        } else {
+            slotWindowUnminimized(w);
+        }
+    });
 }
 
 void YetAnotherMagicLampEffect::slotActiveFullScreenEffectChanged()

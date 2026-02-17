@@ -17,6 +17,9 @@
 
 // Own
 #include "Model.h"
+#include <algorithm>
+#include <effect/effect.h>
+#include <QDebug>
 
 static inline std::chrono::milliseconds durationFraction(std::chrono::milliseconds duration, qreal fraction)
 {
@@ -30,7 +33,7 @@ Model::Model(KWin::EffectWindow* window)
 
 static KWin::EffectWindow* findDock(const KWin::EffectWindow* client)
 {
-    const KWin::EffectWindowList windows = KWin::effects->stackingOrder();
+    const QList<KWin::EffectWindow *> windows = KWin::effects->stackingOrder();
 
     for (KWin::EffectWindow* window : windows) {
         if (!window->isDock())
@@ -53,7 +56,7 @@ static Direction realizeDirection(const KWin::EffectWindow* window)
     QPointF screenDelta;
 
     if (dock) {
-        const QRectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, dock);
+        const KWin::RectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, dock);
 
         if (dock->width() >= dock->height()) {
             if (qFuzzyIsNull(dock->y() - screenRect.y()))
@@ -70,13 +73,13 @@ static Direction realizeDirection(const KWin::EffectWindow* window)
         screenDelta += screenRect.center();
     } else {
         // Perhaps the dock is hidden, deduce direction to the icon.
-        const QRectF iconRect = window->iconGeometry();
+        const KWin::RectF iconRect = window->iconGeometry();
 
-        const KWin::EffectScreen* screen = KWin::effects->screenAt(iconRect.center().toPoint());
-        const int desktop = KWin::effects->currentDesktop();
+        const KWin::LogicalOutput* screen = KWin::effects->screenAt(iconRect.center().toPoint());
+        const KWin::VirtualDesktop* desktop = KWin::effects->currentDesktop();
 
-        const QRectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, screen, desktop);
-        const QRectF constrainedRect = screenRect.intersected(iconRect);
+        const KWin::RectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, screen, desktop);
+        const KWin::RectF constrainedRect = screenRect.intersected(iconRect);
 
         if (qFuzzyIsNull(constrainedRect.left() - screenRect.left()))
             direction = Direction::Left;
@@ -90,7 +93,7 @@ static Direction realizeDirection(const KWin::EffectWindow* window)
         screenDelta += screenRect.center();
     }
 
-    const QRectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, window);
+    const KWin::RectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, window);
     screenDelta -= screenRect.center();
 
     // Dock and window are on the same screen, no further adjustments are required.
@@ -224,9 +227,9 @@ void Model::updateMinimizeStage()
         m_done = false;
         return;
 
-    case AnimationStage::Squash:
-        m_done = true;
-        return;
+		case AnimationStage::Squash:
+				m_done = true;
+				return;
 
     default:
         Q_UNREACHABLE();
@@ -302,16 +305,19 @@ static void transformQuadsLeft(
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const QRectF iconRect = window->iconGeometry();
-    const QRectF windowRect = window->frameGeometry();
+    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF windowRect = window->frameGeometry();
 
     const qreal distance = windowRect.right() - iconRect.right() + params.bumpDistance;
+
+		const qreal minXLeft = iconRect.x() - windowRect.x() - params.bumpDistance;
+		const qreal minXRight = iconRect.right() - windowRect.x() - params.bumpDistance;
 
     for (int i = 0; i < quads.count(); ++i) {
         KWin::WindowQuad& quad = quads[i];
 
-        const qreal leftOffset = quad[0].x() - interpolate(0.0, distance, params.squashProgress);
-        const qreal rightOffset = quad[2].x() - interpolate(0.0, distance, params.squashProgress);
+        const qreal leftOffset = std::max(minXLeft, quad[0].x() - interpolate(0.0, distance, params.squashProgress));
+				const qreal rightOffset = std::max(minXRight, quad[2].x() - interpolate(0.0, distance, params.squashProgress));
 
         const qreal leftScale = params.stretchProgress * params.shapeCurve.valueForProgress((windowRect.width() - leftOffset) / distance);
         const qreal rightScale = params.stretchProgress * params.shapeCurve.valueForProgress((windowRect.width() - rightOffset) / distance);
@@ -345,16 +351,18 @@ static void transformQuadsTop(
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const QRectF iconRect = window->iconGeometry();
-    const QRectF windowRect = window->frameGeometry();
+    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF windowRect = window->frameGeometry();
 
     const qreal distance = windowRect.bottom() - iconRect.bottom() + params.bumpDistance;
+		const qreal minYTop = iconRect.top() - windowRect.y() - params.bumpDistance;
+		const qreal minYBottom = iconRect.bottom() - windowRect.y() - params.bumpDistance;
 
     for (int i = 0; i < quads.count(); ++i) {
         KWin::WindowQuad& quad = quads[i];
 
-        const qreal topOffset = quad[0].y() - interpolate(0.0, distance, params.squashProgress);
-        const qreal bottomOffset = quad[2].y() - interpolate(0.0, distance, params.squashProgress);
+				const qreal topOffset = std::max(minYTop, quad[0].y() - interpolate(0.0, distance, params.squashProgress));
+				const qreal bottomOffset = std::max(minYBottom, quad[2].y() - interpolate(0.0, distance, params.squashProgress));
 
         const qreal topScale = params.stretchProgress * params.shapeCurve.valueForProgress((windowRect.height() - topOffset) / distance);
         const qreal bottomScale = params.stretchProgress * params.shapeCurve.valueForProgress((windowRect.height() - bottomOffset) / distance);
@@ -388,16 +396,19 @@ static void transformQuadsRight(
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const QRectF iconRect = window->iconGeometry();
-    const QRectF windowRect = window->frameGeometry();
+    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF windowRect = window->frameGeometry();
 
     const qreal distance = iconRect.left() - windowRect.left() + params.bumpDistance;
+
+		const qreal maxXLeft = iconRect.x() - windowRect.x() + params.bumpDistance;
+		const qreal maxXRight = iconRect.right() - windowRect.x() + params.bumpDistance;
 
     for (int i = 0; i < quads.count(); ++i) {
         KWin::WindowQuad& quad = quads[i];
 
-        const qreal leftOffset = quad[0].x() + interpolate(0.0, distance, params.squashProgress);
-        const qreal rightOffset = quad[2].x() + interpolate(0.0, distance, params.squashProgress);
+				const qreal leftOffset = std::min(maxXLeft, quad[0].x() + interpolate(0.0, distance, params.squashProgress));
+				const qreal rightOffset = std::min(maxXRight, quad[2].x() + interpolate(0.0, distance, params.squashProgress));
 
         const qreal leftScale = params.stretchProgress * params.shapeCurve.valueForProgress(leftOffset / distance);
         const qreal rightScale = params.stretchProgress * params.shapeCurve.valueForProgress(rightOffset / distance);
@@ -431,16 +442,18 @@ static void transformQuadsBottom(
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const QRectF iconRect = window->iconGeometry();
-    const QRectF windowRect = window->frameGeometry();
+    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF windowRect = window->frameGeometry();
 
     const qreal distance = iconRect.top() - windowRect.top() + params.bumpDistance;
+		const qreal maxYTop = iconRect.y() - windowRect.y() + params.bumpDistance;
+		const qreal maxYBottom = iconRect.bottom() - windowRect.y() + params.bumpDistance;
 
     for (int i = 0; i < quads.count(); ++i) {
         KWin::WindowQuad& quad = quads[i];
 
-        const qreal topOffset = quad[0].y() + interpolate(0.0, distance, params.squashProgress);
-        const qreal bottomOffset = quad[2].y() + interpolate(0.0, distance, params.squashProgress);
+        const qreal topOffset = std::min(maxYTop, quad[0].y() + interpolate(0.0, distance, params.squashProgress));
+				const qreal bottomOffset = std::min(maxYBottom, quad[2].y() + interpolate(0.0, distance, params.squashProgress));
 
         const qreal topScale = params.stretchProgress * params.shapeCurve.valueForProgress(topOffset / distance);
         const qreal bottomScale = params.stretchProgress * params.shapeCurve.valueForProgress(bottomOffset / distance);
@@ -492,7 +505,7 @@ static void transformQuads(
     }
 }
 
-void Model::apply(QVector<KWin::WindowQuad>& quads) const
+void Model::apply(QVector<KWin::WindowQuad>& quads, KWin::WindowPaintData& data) const
 {
     switch (m_stage) {
     case AnimationStage::Bump:
@@ -510,7 +523,8 @@ void Model::apply(QVector<KWin::WindowQuad>& quads) const
     case AnimationStage::Squash:
         applySquash(quads);
         break;
-    }
+
+	}
 }
 
 void Model::applyBump(QVector<KWin::WindowQuad>& quads) const
@@ -586,10 +600,10 @@ bool Model::needsClip() const
     return m_clip;
 }
 
-QRegion Model::clipRegion() const
+KWin::Region Model::clipRegion() const
 {
-    const QRectF iconRect = m_window->iconGeometry();
-    QRectF clipRect = m_window->expandedGeometry();
+    const KWin::RectF iconRect = m_window->iconGeometry();
+	KWin::RectF clipRect = m_window->expandedGeometry();
 
     switch (m_direction) {
     case Direction::Top:
@@ -629,8 +643,8 @@ QRegion Model::clipRegion() const
 
 int Model::computeBumpDistance() const
 {
-    const QRectF windowRect = m_window->frameGeometry();
-    const QRectF iconRect = m_window->iconGeometry();
+    const KWin::RectF windowRect = m_window->frameGeometry();
+    const KWin::RectF iconRect = m_window->iconGeometry();
 
     qreal bumpDistance = 0;
     switch (m_direction) {
@@ -661,8 +675,8 @@ int Model::computeBumpDistance() const
 
 qreal Model::computeShapeFactor() const
 {
-    const QRectF windowRect = m_window->frameGeometry();
-    const QRectF iconRect = m_window->iconGeometry();
+    const KWin::RectF windowRect = m_window->frameGeometry();
+    const KWin::RectF iconRect = m_window->iconGeometry();
 
     int movingExtent = 0;
     int distanceToIcon = 0;

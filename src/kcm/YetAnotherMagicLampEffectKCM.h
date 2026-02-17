@@ -19,6 +19,7 @@
 
 // KF5
 #include <KCModule>
+#include <kpluginmetadata.h>
 
 // Auto-generated
 #include "ui_YetAnotherMagicLampEffectKCM.h"
@@ -27,9 +28,10 @@ class YetAnotherMagicLampEffectKCM : public KCModule {
     Q_OBJECT
 
 public:
-    explicit YetAnotherMagicLampEffectKCM(QWidget* parent = nullptr, const QVariantList& args = {});
+    explicit YetAnotherMagicLampEffectKCM(QObject* parent, const KPluginMetaData &data);
     ~YetAnotherMagicLampEffectKCM() override;
 
+public Q_SLOTS:
     void save() override;
 
 private:

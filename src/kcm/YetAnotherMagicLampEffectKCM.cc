@@ -22,12 +22,11 @@
 #include "YetAnotherMagicLampConfig.h"
 #include "kwineffects_interface.h"
 
-YetAnotherMagicLampEffectKCM::YetAnotherMagicLampEffectKCM(QWidget* parent, const QVariantList& args)
-    : KCModule(parent, args)
-    , m_ui(new Ui::YetAnotherMagicLampEffectKCM)
+YetAnotherMagicLampEffectKCM::YetAnotherMagicLampEffectKCM(QObject *parent, const KPluginMetaData &data)
+    : KCModule(parent, data), m_ui(new Ui::YetAnotherMagicLampEffectKCM())
 {
-    m_ui->setupUi(this);
-    addConfig(YetAnotherMagicLampConfig::self(), this);
+    m_ui->setupUi(widget());
+    addConfig(YetAnotherMagicLampConfig::self(), widget());
     load();
 }
 
@@ -42,5 +41,6 @@ void YetAnotherMagicLampEffectKCM::save()
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
         QStringLiteral("/Effects"),
         QDBusConnection::sessionBus());
-    interface.reconfigureEffect(QStringLiteral("kwin4_effect_yetanothermagiclamp"));
+
+    interface.reconfigureEffect(QStringLiteral("libkwin_effect_yetanothermagiclamp"));
 }

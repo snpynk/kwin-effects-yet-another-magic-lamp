@@ -21,7 +21,13 @@
 #include "common.h"
 
 // kwineffects
-#include <kwineffects.h>
+// #include <kwineffects.h>
+
+#include <core/rect.h>
+#include <effect/effectwindow.h>
+#include <effect/effecthandler.h>
+#include <effect/offscreeneffect.h>
+#include <effect/timeline.h>
 
 /**
  * Model for the magic lamp animation.
@@ -81,7 +87,7 @@ public:
      *
      * @param quadds The list of window quads to be transformed.
      **/
-    void apply(QVector<KWin::WindowQuad>& quads) const;
+    void apply(QVector<KWin::WindowQuad>& quads, KWin::WindowPaintData& data) const;
 
     /**
      * Returns the parameters of the model.
@@ -119,7 +125,7 @@ public:
      *
      * @see needsClip
      **/
-    QRegion clipRegion() const;
+		KWin::Region clipRegion() const;
 
 private:
     void applyBump(QVector<KWin::WindowQuad>& quads) const;
@@ -139,13 +145,13 @@ private:
         Bump,
         Stretch1,
         Stretch2,
-        Squash
+        Squash,
     };
 
     KWin::EffectWindow* m_window;
     AnimationKind m_kind;
     AnimationStage m_stage;
-    KWin::TimeLine m_timeLine;
+		KWin::TimeLine m_timeLine;
     Direction m_direction;
     int m_bumpDistance;
     qreal m_shapeFactor;

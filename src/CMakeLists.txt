@@ -1,33 +1,39 @@
 add_subdirectory(kcm)
 
 set(effect_SRCS
-    Model.cc
-    YetAnotherMagicLampEffect.cc
-    plugin.cc
+		Model.cc
+		YetAnotherMagicLampEffect.cc
+		plugin.cc
 )
 
 kconfig_add_kcfg_files(effect_SRCS
-    YetAnotherMagicLampConfig.kcfgc
+		YetAnotherMagicLampConfig.kcfgc
 )
 
-add_library(kwin4_effect_yetanothermagiclamp SHARED ${effect_SRCS})
+add_library(kwin_effect_yetanothermagiclamp SHARED ${effect_SRCS})
 
-target_link_libraries(kwin4_effect_yetanothermagiclamp
-    Qt5::Core
-    Qt5::Gui
-    KF5::ConfigCore
-    KF5::ConfigGui
-    KF5::CoreAddons
-    KF5::WindowSystem
-    kwineffects::kwineffects
-    kwineffects::kwinglutils
-    epoxy::epoxy
+target_include_directories(kwin_effect_yetanothermagiclamp PRIVATE
+		${Qt6Core_INCLUDE_DIRS}
+		${Qt6Gui_INCLUDE_DIRS}
+		${KF6ConfigCore_INCLUDE_DIRS}
+		${KF6ConfigGui_INCLUDE_DIRS}
+		${KF6CoreAddons_INCLUDE_DIRS}
+		${KWin_INCLUDE_DIRS}
+)
+
+target_link_libraries(kwin_effect_yetanothermagiclamp
+		Qt6::Core
+		Qt6::Gui
+		KF6::ConfigCore
+		KF6::ConfigGui
+		KF6::CoreAddons
+		KWin::kwin
 )
 
 install(
-    TARGETS
-        kwin4_effect_yetanothermagiclamp
+		TARGETS
+				kwin_effect_yetanothermagiclamp
 
-    DESTINATION
-        ${PLUGIN_INSTALL_DIR}/kwin/effects/plugins/
+		DESTINATION
+				${KDE_INSTALL_PLUGINDIR}/kwin/effects/plugins/
 )

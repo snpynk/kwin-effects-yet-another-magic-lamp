@@ -6,6 +6,7 @@
         ]
     },
     "X-KDE-ParentComponents": [
-        "kwin4_effect_yetanothermagiclamp"
-    ]
+        "kwin_effect_yetanothermagiclamp"
+    ],
+    "X-KDE-PluginInfo-Name": "kwin_effect_yetanothermagiclamp_config"
 }
