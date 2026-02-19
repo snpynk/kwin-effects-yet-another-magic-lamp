@@ -16,6 +16,7 @@
  */
 
 #include "YetAnotherMagicLampEffect.h"
+#include <qmargins.h>
 using namespace std::chrono_literals;
 // Own
 #include "Model.h"
@@ -41,6 +42,7 @@ enum ShapeCurve {
 };
 
 YetAnotherMagicLampEffect::YetAnotherMagicLampEffect()
+: m_taskFrame(new KSvg::FrameSvg(this))
 {
     reconfigure(ReconfigureAll);
 
@@ -57,6 +59,8 @@ YetAnotherMagicLampEffect::YetAnotherMagicLampEffect()
     }
 
     setVertexSnappingMode(KWin::RenderGeometry::VertexSnappingMode::None);
+
+		m_taskFrame->setImagePath(QStringLiteral("widgets/background"));
 }
 
 YetAnotherMagicLampEffect::~YetAnotherMagicLampEffect()
@@ -215,6 +219,7 @@ void YetAnotherMagicLampEffect::slotWindowMinimized(KWin::EffectWindow* w)
     AnimationData& data = m_animations[w];
     data.model.setWindow(w);
     data.model.setParameters(m_modelParameters);
+		data.model.setIconMargins(iconMargins());
     data.model.start(Model::AnimationKind::Minimize);
     data.visibleRef = KWin::EffectWindowVisibleRef(w, KWin::EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
 
@@ -236,6 +241,7 @@ void YetAnotherMagicLampEffect::slotWindowUnminimized(KWin::EffectWindow* w)
     AnimationData& data = m_animations[w];
     data.model.setWindow(w);
     data.model.setParameters(m_modelParameters);
+		data.model.setIconMargins(iconMargins());
     data.model.start(Model::AnimationKind::Unminimize);
 
     redirect(w);
@@ -267,4 +273,17 @@ void YetAnotherMagicLampEffect::slotActiveFullScreenEffectChanged()
         }
         m_animations.clear();
     }
+}
+
+QMarginsF YetAnotherMagicLampEffect::iconMargins()
+{
+		qreal leftMargin = m_taskFrame->marginSize(KSvg::FrameSvg::LeftMargin) * .5;
+		qreal topMargin = m_taskFrame->marginSize(KSvg::FrameSvg::TopMargin) * .5;
+
+		return QMarginsF(
+			leftMargin,
+			topMargin, 
+			leftMargin, 
+			topMargin
+		);
 }

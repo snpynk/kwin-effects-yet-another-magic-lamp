@@ -25,6 +25,8 @@
 #include <core/region.h>
 #include <effect/effectwindow.h>
 #include <effect/offscreeneffect.h>
+#include <ksvg/framesvg.h>
+#include <qmargins.h>
 
 struct AnimationData {
     Model model;
@@ -49,6 +51,8 @@ public:
     bool isActive() const override;
     int requestedEffectChainPosition() const override;
 
+		QMarginsF iconMargins();
+
     static bool supported();
 
 protected:
@@ -66,6 +70,8 @@ private:
     int m_gridResolution;
 
     QMap<KWin::EffectWindow*, AnimationData> m_animations;
+
+		KSvg::FrameSvg *m_taskFrame;
 };
 
 inline int YetAnotherMagicLampEffect::requestedEffectChainPosition() const

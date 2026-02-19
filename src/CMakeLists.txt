@@ -27,7 +27,9 @@ target_link_libraries(kwin_effect_yetanothermagiclamp
 		KF6::ConfigCore
 		KF6::ConfigGui
 		KF6::CoreAddons
+		KF6::Svg
 		KWin::kwin
+		Plasma::Plasma
 )
 
 install(

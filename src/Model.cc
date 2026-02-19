@@ -19,7 +19,7 @@
 #include "Model.h"
 #include <algorithm>
 #include <effect/effect.h>
-#include <QDebug>
+#include <qmargins.h>
 
 static inline std::chrono::milliseconds durationFraction(std::chrono::milliseconds duration, qreal fraction)
 {
@@ -289,6 +289,7 @@ struct TransformParameters {
     qreal squashProgress;
     qreal bumpProgress;
     qreal bumpDistance;
+		QMarginsF iconMargins;
 };
 
 static inline qreal interpolate(qreal from, qreal to, qreal t)
@@ -299,14 +300,29 @@ static inline qreal interpolate(qreal from, qreal to, qreal t)
 static void transformQuadsLeft(
     const KWin::EffectWindow* window,
     const TransformParameters& params,
-    QVector<KWin::WindowQuad>& quads)
+    QVector<KWin::WindowQuad>& quads
+)
 {
     // FIXME: Have a generic function that transforms window quads. Perhaps,
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF ogIconRect = window->iconGeometry().marginsRemoved(params.iconMargins);
+
     const KWin::RectF windowRect = window->frameGeometry();
+
+		const qreal resizeRatio = windowRect.width() > windowRect.height() 
+			? ogIconRect.width() / windowRect.width()
+			: ogIconRect.height() / windowRect.height();
+
+		const qreal miniatureHeight = windowRect.height() * resizeRatio;
+
+    const KWin::RectF iconRect = KWin::RectF(
+			ogIconRect.x(),
+			ogIconRect.y() + (ogIconRect.height() * .5) - (miniatureHeight * .5),
+			windowRect.width() * resizeRatio,	
+			windowRect.height() * resizeRatio
+		);
 
     const qreal distance = windowRect.right() - iconRect.right() + params.bumpDistance;
 
@@ -345,14 +361,30 @@ static void transformQuadsLeft(
 static void transformQuadsTop(
     const KWin::EffectWindow* window,
     const TransformParameters& params,
-    QVector<KWin::WindowQuad>& quads)
+    QVector<KWin::WindowQuad>& quads
+)
 {
     // FIXME: Have a generic function that transforms window quads. Perhaps,
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const KWin::RectF iconRect = window->iconGeometry();
+
+    const KWin::RectF ogIconRect = window->iconGeometry().marginsRemoved(params.iconMargins);
+
     const KWin::RectF windowRect = window->frameGeometry();
+
+		const qreal resizeRatio = windowRect.width() > windowRect.height() 
+			? ogIconRect.width() / windowRect.width()
+			: ogIconRect.height() / windowRect.height();
+
+		const qreal miniatureWidth = windowRect.width() * resizeRatio;
+
+    const KWin::RectF iconRect = KWin::RectF(
+			ogIconRect.x() + (ogIconRect.width() * .5) - (miniatureWidth * .5),
+			ogIconRect.y(),
+			miniatureWidth,	
+			windowRect.height() * resizeRatio
+		);
 
     const qreal distance = windowRect.bottom() - iconRect.bottom() + params.bumpDistance;
 		const qreal minYTop = iconRect.top() - windowRect.y() - params.bumpDistance;
@@ -390,14 +422,29 @@ static void transformQuadsTop(
 static void transformQuadsRight(
     const KWin::EffectWindow* window,
     const TransformParameters& params,
-    QVector<KWin::WindowQuad>& quads)
+    QVector<KWin::WindowQuad>& quads
+)
 {
     // FIXME: Have a generic function that transforms window quads. Perhaps,
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF ogIconRect = window->iconGeometry().marginsRemoved(params.iconMargins);
+
     const KWin::RectF windowRect = window->frameGeometry();
+
+		const qreal resizeRatio = windowRect.width() > windowRect.height() 
+			? ogIconRect.width() / windowRect.width()
+			: ogIconRect.height() / windowRect.height();
+
+		const qreal miniatureHeight = windowRect.height() * resizeRatio;
+
+    const KWin::RectF iconRect = KWin::RectF(
+			ogIconRect.x(),
+			ogIconRect.y() + (ogIconRect.height() * .5) - (miniatureHeight * .5),
+			windowRect.width() * resizeRatio,	
+			windowRect.height() * resizeRatio
+		);
 
     const qreal distance = iconRect.left() - windowRect.left() + params.bumpDistance;
 
@@ -436,14 +483,29 @@ static void transformQuadsRight(
 static void transformQuadsBottom(
     const KWin::EffectWindow* window,
     const TransformParameters& params,
-    QVector<KWin::WindowQuad>& quads)
+    QVector<KWin::WindowQuad>& quads
+)
 {
     // FIXME: Have a generic function that transforms window quads. Perhaps,
     // a better approach is to have a transform method that operates on each
     // individual vertex, e.g. void Model::transform(WindowVertex& vertex).
 
-    const KWin::RectF iconRect = window->iconGeometry();
+    const KWin::RectF ogIconRect = window->iconGeometry().marginsRemoved(params.iconMargins);
+
     const KWin::RectF windowRect = window->frameGeometry();
+
+		const qreal resizeRatio = windowRect.width() > windowRect.height() 
+			? ogIconRect.width() / windowRect.width()
+			: ogIconRect.height() / windowRect.height();
+
+		const qreal miniatureWidth = windowRect.width() * resizeRatio;
+
+    const KWin::RectF iconRect = KWin::RectF(
+			ogIconRect.x() + (ogIconRect.width() * .5) - (miniatureWidth * .5),
+			ogIconRect.y(),
+			windowRect.width() * resizeRatio,	
+			windowRect.height() * resizeRatio
+		);
 
     const qreal distance = iconRect.top() - windowRect.top() + params.bumpDistance;
 		const qreal maxYTop = iconRect.y() - windowRect.y() + params.bumpDistance;
@@ -481,7 +543,8 @@ static void transformQuadsBottom(
 static void transformQuads(
     const KWin::EffectWindow* window,
     const TransformParameters& params,
-    QVector<KWin::WindowQuad>& quads)
+    QVector<KWin::WindowQuad>& quads
+)
 {
     switch (params.direction) {
     case Direction::Left:
@@ -507,6 +570,7 @@ static void transformQuads(
 
 void Model::apply(QVector<KWin::WindowQuad>& quads, KWin::WindowPaintData& data) const
 {
+
     switch (m_stage) {
     case AnimationStage::Bump:
         applyBump(quads);
@@ -536,6 +600,7 @@ void Model::applyBump(QVector<KWin::WindowQuad>& quads) const
     params.stretchProgress = 0.0;
     params.bumpProgress = m_timeLine.value();
     params.bumpDistance = m_bumpDistance;
+    params.iconMargins = m_iconMargins;
     transformQuads(m_window, params, quads);
 }
 
@@ -548,6 +613,7 @@ void Model::applyStretch1(QVector<KWin::WindowQuad>& quads) const
     params.stretchProgress = m_shapeFactor * m_timeLine.value();
     params.bumpProgress = 1.0;
     params.bumpDistance = m_bumpDistance;
+    params.iconMargins = m_iconMargins;
     transformQuads(m_window, params, quads);
 }
 
@@ -560,6 +626,7 @@ void Model::applyStretch2(QVector<KWin::WindowQuad>& quads) const
     params.stretchProgress = m_shapeFactor * m_timeLine.value();
     params.bumpProgress = params.stretchProgress;
     params.bumpDistance = m_bumpDistance;
+    params.iconMargins = m_iconMargins;
     transformQuads(m_window, params, quads);
 }
 
@@ -572,6 +639,7 @@ void Model::applySquash(QVector<KWin::WindowQuad>& quads) const
     params.stretchProgress = qMin(m_shapeFactor + params.squashProgress, 1.0);
     params.bumpProgress = 1.0;
     params.bumpDistance = m_bumpDistance;
+    params.iconMargins = m_iconMargins;
     transformQuads(m_window, params, quads);
 }
 
@@ -583,6 +651,16 @@ Model::Parameters Model::parameters() const
 void Model::setParameters(const Parameters& parameters)
 {
     m_parameters = parameters;
+}
+
+QMarginsF Model::iconMargins()
+{
+    return m_iconMargins;
+}
+
+void Model::setIconMargins(const QMarginsF iconMargins)
+{
+    m_iconMargins = iconMargins;
 }
 
 KWin::EffectWindow* Model::window() const

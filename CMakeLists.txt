@@ -36,7 +36,10 @@ find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
     CoreAddons
     WindowSystem
     KCMUtils
+    Svg
 )
+
+find_package(Plasma REQUIRED)
 
 find_package(KWin REQUIRED)
 

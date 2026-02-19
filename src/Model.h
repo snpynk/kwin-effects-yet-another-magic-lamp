@@ -28,6 +28,7 @@
 #include <effect/effecthandler.h>
 #include <effect/offscreeneffect.h>
 #include <effect/timeline.h>
+#include <qmargins.h>
 
 /**
  * Model for the magic lamp animation.
@@ -102,6 +103,18 @@ public:
     void setParameters(const Parameters& parameters);
 
     /**
+     * Returns the icon margins of the model.
+     **/
+    QMarginsF iconMargins();
+
+    /**
+     * Sets the icon margins of the model.
+     *
+     * @param iconMargins The new icon margins.
+     **/
+    void setIconMargins(const QMarginsF iconMargins);
+
+    /**
      * Returns the associated window.
      **/
     KWin::EffectWindow* window() const;
@@ -157,4 +170,5 @@ private:
     qreal m_shapeFactor;
     bool m_clip;
     bool m_done = false;
+		QMarginsF m_iconMargins;
 };
