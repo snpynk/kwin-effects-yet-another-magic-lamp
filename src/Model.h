@@ -75,7 +75,7 @@ public:
     /**
      * Updates the model to @p milliseconds.
      **/
-    void advance(std::chrono::milliseconds presentTime);
+    void advance(KWin::RenderView* view);
 
     /**
      * Returns whether the animation is complete.

@@ -181,9 +181,9 @@ void Model::start(AnimationKind kind)
     }
 }
 
-void Model::advance(std::chrono::milliseconds presentTime)
+void Model::advance(KWin::RenderView* view)
 {
-    m_timeLine.advance(presentTime);
+    m_timeLine.advance(view);
     if (!m_timeLine.done()) {
         return;
     }

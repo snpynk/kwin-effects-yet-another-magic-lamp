@@ -134,22 +134,22 @@ void YetAnotherMagicLampEffect::reconfigure(ReconfigureFlags flags)
     m_gridResolution = YetAnotherMagicLampConfig::gridResolution();
 }
 
-void YetAnotherMagicLampEffect::prePaintScreen(KWin::ScreenPrePaintData& data, std::chrono::milliseconds presentTime)
+void YetAnotherMagicLampEffect::prePaintScreen(KWin::ScreenPrePaintData& data)
 {
     data.mask |= PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS;
 
-    KWin::effects->prePaintScreen(data, presentTime);
+    KWin::effects->prePaintScreen(data);
 }
 
-void YetAnotherMagicLampEffect::prePaintWindow(KWin::RenderView* view, KWin::EffectWindow* w, KWin::WindowPrePaintData& data, std::chrono::milliseconds presentTime)
+void YetAnotherMagicLampEffect::prePaintWindow(KWin::RenderView* view, KWin::EffectWindow* w, KWin::WindowPrePaintData& data)
 {
     auto animationIt = m_animations.find(w);
     if (animationIt != m_animations.end()) {
-        (animationIt)->model.advance(presentTime);
+        (animationIt)->model.advance(view);
         data.setTransformed();
     }
 
-    KWin::effects->prePaintWindow(view, w, data, presentTime);
+    KWin::effects->prePaintWindow(view, w, data);
 }
 
 void YetAnotherMagicLampEffect::postPaintScreen()
