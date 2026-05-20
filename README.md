@@ -46,9 +46,10 @@ sudo pacman -S cmake extra-cmake-modules kwin
 On Fedora
 
 ```sh
-sudo dnf install cmake extra-cmake-modules kf5-kconfig-devel \
-    kf5-kcoreaddons-devel kf5-kwindowsystem-devel kwin-devel \
-    qt5-qtbase-devel libepoxy-devel kf5-kconfigwidgets-devel
+sudo dnf install cmake extra-cmake-modules kf6-kconfig-devel \
+    kf6-kcoreaddons-devel kf6-kwindowsystem-devel kwin-devel \
+    qt6-qtbase-devel kf6-kconfigwidgets-devel kf6-kcmutils-devel \
+    kf6-ksvg-devel libplasma-devel libdrm-devel
 ```
 
 On Ubuntu
@@ -63,9 +64,8 @@ After you installed all the required dependencies, you can build
 the effect:
 
 ```sh
-git clone https://github.com/zzag/kwin-effects-yet-another-magic-lamp.git
+git clone [https://github.com/snpynk/kwin-effects-yet-another-magic-lamp.git](https://github.com/snpynk/kwin-effects-yet-another-magic-lamp.git)
 cd kwin-effects-yet-another-magic-lamp
-git checkout Plasma/5.23
 mkdir build && cd build
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
