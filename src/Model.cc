@@ -76,9 +76,8 @@ static Direction realizeDirection(const KWin::EffectWindow* window)
         const KWin::RectF iconRect = window->iconGeometry();
 
         const KWin::LogicalOutput* screen = KWin::effects->screenAt(iconRect.center().toPoint());
-        const KWin::VirtualDesktop* desktop = KWin::effects->currentDesktop();
 
-        const KWin::RectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, screen, desktop);
+        const KWin::RectF screenRect = KWin::effects->clientArea(KWin::ScreenArea, screen);
         const KWin::RectF constrainedRect = screenRect.intersected(iconRect);
 
         if (qFuzzyIsNull(constrainedRect.left() - screenRect.left()))
