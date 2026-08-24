@@ -569,6 +569,7 @@ static void transformQuads(
 
 void Model::apply(QVector<KWin::WindowQuad>& quads, KWin::WindowPaintData& data) const
 {
+		Q_UNUSED(data);
 
     switch (m_stage) {
     case AnimationStage::Bump:
